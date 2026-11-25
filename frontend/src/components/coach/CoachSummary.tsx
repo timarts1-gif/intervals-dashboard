@@ -12,6 +12,7 @@ import { fmtDate } from '../../utils/format';
  *    > +20 transitie, +5…+20 fris, −10…+5 grijze zone, −30…−10 optimale training, < −30 hoog risico.
  *  - Conditie: CTL onder LOW_CTL, of CTL in 28 dagen meer dan CTL_DROP_PCT gedaald.
  */
+const FRESH_PCT = 5;
 const LOW_CTL = 30;
 const CTL_DROP_PCT = 15;
 const STALE_DAYS = 7;
@@ -54,25 +55,47 @@ export function assess(a: CoachAthlete, periodEnd: string): Verdict {
   if (lowCondition) notes.push('Lage basisconditie: er is de afgelopen weken weinig getraind.');
   else if (declining) notes.push(`Conditie loopt terug: ${Math.round(ctlDropPct)}% lager dan 4 weken geleden.`);
 
-  let v: Verdict;
+  // "Fris" = Intervals.icu zone Fresh (Form ≥ +5% van CTL). Alleen dan geldt iemand als koersklaar;
+  // een negatieve of bijna-nul Form betekent dat er nog vermoeidheid van recente training is.
+  const fresh = formPct >= FRESH_PCT;
+
   if (formPct < -30) {
-    v = { tone: 'red', title: 'Erg vermoeid', text: 'Heeft veel meer getraind dan gewend. Rust nodig; liever niet koersen.', notes };
-  } else if (formPct < -10) {
-    v = { tone: 'orange', title: 'Vermoeid door training', text: 'Zit midden in een zware trainingsperiode. Nog niet fris genoeg voor een topprestatie.', notes };
-  } else if (lowCondition || declining) {
-    v = {
+    return { tone: 'red', title: 'Erg vermoeid', text: 'Heeft veel meer getraind dan gewend. Rust nodig; liever niet koersen.', notes };
+  }
+  if (formPct < -10) {
+    return {
+      tone: 'orange',
+      title: 'Vermoeid door training',
+      text: 'Zit midden in een zware trainingsperiode. Niet fris genoeg om goed te koersen.',
+      notes,
+    };
+  }
+  if (lowCondition || declining) {
+    const v: Verdict = {
       tone: 'yellow',
-      title: lowCondition ? 'Uitgerust, maar weinig conditie' : 'Uitgerust, conditie zakt',
-      text: 'Niet vermoeid, maar de conditie is niet op niveau. Koersen kan, verwacht geen topvorm.',
+      title: fresh
+        ? lowCondition ? 'Fris, maar weinig conditie' : 'Fris, maar conditie zakt'
+        : lowCondition ? 'Weinig conditie' : 'Conditie zakt',
+      text: fresh
+        ? 'Niet vermoeid, maar de conditie is niet op niveau. Koersen kan, verwacht geen topvorm.'
+        : 'De conditie is niet op niveau en er is nog wat vermoeidheid. Verwacht geen topvorm.',
       notes: [],
     };
     if (declining && lowCondition) v.notes.push(`Conditie is ${Math.round(ctlDropPct)}% lager dan 4 weken geleden.`);
-  } else if (formPct > 20) {
-    v = { tone: 'yellow', title: 'Erg uitgerust', text: 'Fris, maar al een tijdje weinig training. Klaar om te koersen; conditie kan gaan zakken.', notes };
-  } else {
-    v = { tone: 'green', title: 'Klaar om te koersen', text: 'Goede conditie en voldoende uitgerust.', notes };
+    return v;
   }
-  return v;
+  if (!fresh) {
+    return {
+      tone: 'yellow',
+      title: 'Nog niet helemaal fris',
+      text: 'Goede conditie, maar nog lichte vermoeidheid van recente training. Een paar rustige dagen maken iemand koersklaar.',
+      notes,
+    };
+  }
+  if (formPct > 20) {
+    return { tone: 'yellow', title: 'Erg uitgerust', text: 'Fris, maar al een tijdje weinig training. Kan koersen; de conditie kan gaan zakken.', notes };
+  }
+  return { tone: 'green', title: 'Klaar om te koersen', text: 'Goede conditie en uitgerust.', notes };
 }
 
 export function CoachSummary({ data }: { data: CoachOverview }) {
@@ -122,12 +145,17 @@ export function CoachSummary({ data }: { data: CoachOverview }) {
 }
 
 const LEGEND: { tone: Tone; title: string; when: string }[] = [
-  { tone: 'green', title: 'Klaar om te koersen', when: 'Uitgerust en de conditie is op niveau.' },
-  { tone: 'yellow', title: 'Erg uitgerust', when: 'Form boven +20% van CTL: al een tijd weinig getraind.' },
+  { tone: 'green', title: 'Klaar om te koersen', when: `Form tussen +${FRESH_PCT}% en +20% van CTL (fris) en de conditie is op niveau.` },
+  { tone: 'yellow', title: 'Erg uitgerust', when: 'Form boven +20% van CTL: fris, maar al een tijd weinig getraind.' },
   {
     tone: 'yellow',
-    title: 'Uitgerust, maar weinig conditie / conditie zakt',
-    when: `Niet vermoeid, maar CTL onder ${LOW_CTL} of meer dan ${CTL_DROP_PCT}% gedaald in 28 dagen.`,
+    title: 'Nog niet helemaal fris',
+    when: `Form tussen −10% en +${FRESH_PCT}% van CTL: lichte vermoeidheid. Koersen kan, maar niet op z'n best.`,
+  },
+  {
+    tone: 'yellow',
+    title: 'Weinig conditie / conditie zakt',
+    when: `CTL onder ${LOW_CTL} of meer dan ${CTL_DROP_PCT}% gedaald in 28 dagen (en niet erg vermoeid).`,
   },
   { tone: 'orange', title: 'Vermoeid door training', when: 'Form tussen −30% en −10% van CTL: zware trainingsperiode.' },
   { tone: 'red', title: 'Erg vermoeid', when: 'Form onder −30% van CTL: veel meer getraind dan gewend, rust nodig.' },
