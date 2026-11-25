@@ -54,7 +54,7 @@ export function Settings() {
             <Row label="Athlete-ID">{athlete?.id ?? health.data?.athleteId ?? '–'}</Row>
             <Row label="Login dashboard">{health.data ? (health.data.ownerAuth ? 'Aan' : 'Uit (OWNER_AUTH=off, alleen lokaal)') : '–'}</Row>
             <Row label="Gedeelde coachpagina">
-              {health.data ? (health.data.shareEnabled ? `Aan · /share/ · ${health.data.coachAthletes} atleet/atleten` : 'Uit (geen share-wachtwoord ingesteld, zie README)') : '–'}
+              {health.data ? (health.data.shareEnabled ? `Aan · /share/ · ${health.data.coachMode === 'auto' ? 'alle atleten met write-toegang' : `${health.data.coachAthletes} vaste atleet/atleten`}` : 'Uit (geen share-wachtwoord ingesteld, zie README)') : '–'}
             </Row>
             <Row label="Geladen periode">
               {fmtDate(toIsoDate(rangeStart))} – vandaag

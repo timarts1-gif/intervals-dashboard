@@ -20,7 +20,9 @@ export interface AppConfig {
   corsOrigins: string[];
   cacheTtlMs: number;
   coach: {
-    /** Expliciete lijst athlete-ID's die je coacht (de API onderscheidt coachen niet van volgen). */
+    /** 'auto' = alle atleten met icu_permission WRITE; 'list' = alleen athleteIds. */
+    mode: 'auto' | 'list';
+    /** Expliciete lijst athlete-ID's (alleen bij mode 'list'). */
     athleteIds: string[];
     cacheTtlMs: number;
   };
@@ -64,10 +66,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       .filter(Boolean),
     cacheTtlMs: readNumber(env, 'CACHE_TTL_SECONDS', 300) * 1000,
     coach: {
-      athleteIds: (env.COACH_ATHLETE_IDS ?? '')
+      mode: (env.COACH_ATHLETE_IDS ?? 'auto').trim().toLowerCase() === 'auto' ? 'auto' : 'list',
+      athleteIds: (env.COACH_ATHLETE_IDS ?? 'auto')
         .split(',')
         .map((s) => s.trim())
-        .filter(Boolean),
+        .filter((s) => s && s.toLowerCase() !== 'auto'),
       cacheTtlMs: readNumber(env, 'COACH_CACHE_TTL_SECONDS', 3600) * 1000,
     },
     auth: {

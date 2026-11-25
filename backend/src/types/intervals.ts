@@ -118,3 +118,11 @@ export interface IntervalsAthleteSummary {
   athlete_name?: string;
   date?: string;
 }
+
+/** Subset van AthleteWithTags (GET /athletes). Alle overige profielvelden worden genegeerd. */
+export interface IntervalsFollowedAthlete {
+  id: string;
+  name?: string;
+  /** Enum in de spec: NONE | READ | WRITE (betekenis niet gedocumenteerd). */
+  icu_permission?: 'NONE' | 'READ' | 'WRITE' | null;
+}

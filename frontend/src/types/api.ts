@@ -88,7 +88,8 @@ export interface Status {
   configured: boolean;
   athleteId: string;
   cacheEntries: number;
-  coachAthletes: number;
+  coachMode: 'auto' | 'list';
+  coachAthletes: number | null;
   shareEnabled: boolean;
   ownerAuth: boolean;
 }

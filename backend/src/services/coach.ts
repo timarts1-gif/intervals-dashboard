@@ -116,12 +116,23 @@ export function createCoachService(config: AppConfig, intervals: IntervalsClient
     const oldest = isoDate(addDays(today, -DAYS));
     const newest = isoDate(today);
 
-    const summary = await intervals.athleteSummary();
     const names = new Map<string, string>();
-    for (const row of summary) if (row.athlete_id && row.athlete_name) names.set(row.athlete_id, row.athlete_name);
+    let ids: string[];
+    if (config.coach.mode === 'auto') {
+      // Alle atleten waarvoor je write-toegang hebt (icu_permission WRITE). Van het profiel
+      // worden alleen id en naam gelezen; de rest van het object wordt direct weggegooid.
+      const list = await intervals.listAthletes();
+      const write = list.filter((a) => a.icu_permission === 'WRITE' && a.id);
+      for (const a of write) if (a.name) names.set(a.id, a.name);
+      ids = write.map((a) => a.id);
+    } else {
+      const summary = await intervals.athleteSummary();
+      for (const row of summary) if (row.athlete_id && row.athlete_name) names.set(row.athlete_id, row.athlete_name);
+      ids = config.coach.athleteIds;
+    }
 
     const athletes = await Promise.all(
-      config.coach.athleteIds.map(async (id) => {
+      ids.map(async (id) => {
         const rows = await intervals.listWellnessFields(id, oldest, newest, WELLNESS_FIELDS);
         return buildAthlete(names.get(id) ?? 'Onbekende atleet', rows, today);
       }),

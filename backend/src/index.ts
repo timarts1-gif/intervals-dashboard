@@ -19,5 +19,6 @@ app.listen(config.port, config.host, () => {
   if (!config.intervals.apiKey) console.warn('Let op: INTERVALS_API_KEY ontbreekt. Zie backend/.env.example.');
   if (!config.auth.ownerAuth) console.warn('Let op: OWNER_AUTH=off — dashboard zonder login (alleen lokaal).');
   if (!config.auth.sharePasswordHash) console.warn('Gedeelde coachpagina staat uit (SHARE_PASSWORD_HASH leeg).');
-  if (config.coach.athleteIds.length === 0) console.warn('COACH_ATHLETE_IDS is leeg: coachoverzicht toont geen atleten.');
+  if (config.coach.mode === 'auto') console.log('Coachoverzicht: alle atleten met write-toegang (COACH_ATHLETE_IDS=auto).');
+  else if (config.coach.athleteIds.length === 0) console.warn('COACH_ATHLETE_IDS is leeg: coachoverzicht toont geen atleten.');
 });

@@ -5,6 +5,7 @@ import type {
   IntervalsActivity,
   IntervalsAthlete,
   IntervalsAthleteSummary,
+  IntervalsFollowedAthlete,
   IntervalsPowerCurveSet,
   IntervalsWellness,
 } from '../types/intervals.js';
@@ -91,6 +92,9 @@ export function createIntervalsClient(config: AppConfig) {
 
     listPowerCurves: (type: string, curves?: string) =>
       request<IntervalsPowerCurveSet>(`${athletePath()}/power-curves`, { type, curves }),
+
+    /** Atleten die je volgt of coacht, inclusief jezelf (GET /athletes). */
+    listAthletes: () => request<IntervalsFollowedAthlete[]>('/athletes'),
 
     /** Atleten die je volgt of coacht (GET /athlete/{id}/athlete-summary.json). */
     athleteSummary: () => request<IntervalsAthleteSummary[]>(`${athletePath()}/athlete-summary.json`),

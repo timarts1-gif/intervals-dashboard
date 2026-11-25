@@ -107,7 +107,7 @@ export function CoachOverview({ data }: { data: Overview }) {
       </div>
 
       {rows.length === 0 ? (
-        <EmptyState label="Geen atleten ingesteld (COACH_ATHLETE_IDS)" />
+        <EmptyState label="Geen atleten gevonden met write-toegang" />
       ) : (
         <div className="-mx-5 overflow-x-auto">
           <table className="w-full min-w-[1000px] text-sm">

@@ -90,7 +90,7 @@ intervals-dashboard/
 | --- | --- | --- |
 | `GET /api/health` | iedereen | – (alleen `{status:"ok"}`) |
 | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | iedereen | – |
-| `GET /api/share/coach` | share + eigenaar | `athlete-summary.json` (alleen namen) en `wellness?fields=id,ctl,atl,rampRate,atlLoad` per atleet |
+| `GET /api/share/coach` | share + eigenaar | `GET /athletes` (alleen id, naam, `icu_permission`; bij een vaste lijst `athlete-summary.json` voor de namen) en `wellness?fields=id,ctl,atl,rampRate,atlLoad` per atleet |
 | `GET /api/status` | eigenaar | – |
 | `GET /api/athlete` | eigenaar | `GET /api/v1/athlete/{id}` |
 | `GET /api/activities?oldest=YYYY-MM-DD&newest=YYYY-MM-DD` | eigenaar | `GET /api/v1/athlete/{id}/activities` |
@@ -137,7 +137,9 @@ Een wachtwoord wijzigen doe je op dezelfde manier. Alle sessies van die rol verv
 
 ### Welke atleten
 
-De API maakt geen onderscheid tussen atleten die je **volgt** en atleten die je **coacht**. Daarom staat de lijst expliciet in `COACH_ATHLETE_IDS` (komma-gescheiden, bijvoorbeeld `i49046`). Het athlete-ID staat in de URL van het profiel van de atleet op intervals.icu.
+Standaard (`COACH_ATHLETE_IDS=auto`) toont het overzicht **alle atleten waarvoor je write-toegang hebt**. De server haalt daarvoor `GET /api/v1/athletes` op en neemt de atleten met `icu_permission: WRITE`. Van elk profiel worden alleen het ID en de naam gelezen; de rest gooit de server direct weg. Een nieuwe atleet verschijnt dus vanzelf, uiterlijk na de cacheduur van 1 uur. Wil je dat sneller, gebruik dan "Cache legen" op de Settings-pagina.
+
+Let op: de API-specificatie noemt alleen de mogelijke waarden van `icu_permission` (NONE/READ/WRITE), niet wat ze betekenen. In de praktijk is WRITE de atleet die je coacht en READ een atleet die je alleen volgt. Wil je zelf bepalen wie erin staat, geef dan een vaste lijst: `COACH_ATHLETE_IDS=i49046,i12345`. Het athlete-ID staat in de URL van het profiel van de atleet op intervals.icu.
 
 ### Wat de gedeelde pagina wel en niet bevat
 

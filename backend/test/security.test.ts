@@ -44,6 +44,12 @@ function stubIntervals(): IntervalsClient {
     listActivities: async () => [],
     listWellness: async () => [],
     listPowerCurves: async () => ({ list: [] }),
+    listAthletes: async () => [
+      { id: 'i0', name: 'Eigenaar', icu_permission: null, email: 'privacy@example.com' },
+      { id: 'i49046', name: 'Florien Bolks', icu_permission: 'WRITE', email: 'privacy@example.com', icu_date_of_birth: '2000-01-01', weight: 60 },
+      { id: 'i777', name: 'Gevolgde Atleet', icu_permission: 'READ', email: 'privacy@example.com' },
+      { id: 'i888', name: 'Geen Toegang', icu_permission: 'NONE' },
+    ] as never,
     athleteSummary: async () => [
       { athlete_id: 'i49046', athlete_name: 'Florien Bolks', email: 'privacy@example.com', weight: 60, icu_date_of_birth: '2000-01-01' } as never,
     ],
@@ -212,6 +218,19 @@ describe('c) het share-endpoint bevat alleen whitelisted velden', () => {
     expect(a.ctlChange28).toBe(28);
     expect(a.formChange28).toBe(0);
     expect(a.weeklyLoad).toEqual([350, 350, 350, 350]);
+  });
+  it('auto-modus: alleen atleten met write-toegang, zonder hun profielvelden', async () => {
+    const c = makeConfig({ COACH_ATHLETE_IDS: 'auto' });
+    expect(c.coach.mode).toBe('auto');
+    const app = makeApp(c);
+    const { cookie } = await login(app, SHARE_PW);
+    const res = await request(app).get('/api/share/coach').set('Cookie', cookie!);
+    expect(res.body.athletes.map((a: { name: string }) => a.name)).toEqual(['Florien Bolks']);
+    const text = JSON.stringify(res.body);
+    for (const f of [...FORBIDDEN, 'Gevolgde Atleet', 'Geen Toegang', 'Eigenaar', 'i777', 'i888']) expect(text).not.toContain(f);
+  });
+  it('zonder COACH_ATHLETE_IDS is auto de standaard', () => {
+    expect(loadConfig({}).coach.mode).toBe('auto');
   });
   it('geen caching in gedeelde caches en niet indexeerbaar', async () => {
     const app = makeApp();
