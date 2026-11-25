@@ -143,7 +143,7 @@ De API maakt geen onderscheid tussen atleten die je **volgt** en atleten die je 
 
 - **Wel** (whitelist in `backend/src/services/coach.ts`): naam, CTL, ATL, Form (CTL − ATL), ramp rate, load per 7 dagen (4 blokken), verandering t.o.v. 28 dagen geleden, laatste datadag en de dagreeks CTL/ATL/Form.
 - **Niet**: athlete-ID, e-mail, gewicht, HRV, rusthartslag, slaap, stemming/blessure, comments, activiteiten, locatie of andere profielvelden.
-- **Load:** komt uit wellness-veld `atlLoad`. Dat is de dagload waarmee Intervals.icu ATL berekent; getest is dat die gelijk is aan de som van `icu_training_load` per dag. Hij is ook beschikbaar als activiteiten via Strava binnenkwamen, en die levert `/activities` niet.
+- **Load:** komt uit wellness-veld `atlLoad`. De API-specificatie omschrijft dat veld niet. Getest op 117 dagen: het is gelijk aan de som van `icu_training_load` per dag. Het is ook beschikbaar als activiteiten via Strava binnenkwamen, en die levert `/activities` niet.
 - **Cache:** het coachoverzicht wordt 1 uur gecachet (`COACH_CACHE_TTL_SECONDS`).
 - **Niet indexeren of opslaan:** responses krijgen `X-Robots-Tag: noindex`, `/robots.txt` sluit alles uit, en de data krijgt `Cache-Control: private, no-store`.
 

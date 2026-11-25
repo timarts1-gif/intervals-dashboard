@@ -6,9 +6,9 @@ import { TtlCache } from './cache.js';
 /**
  * Coachoverzicht: per gecoachte atleet CTL/ATL/Form over 28 dagen.
  *
- * Bron: wellness (velden ctl, atl, rampRate, atlLoad). atlLoad is de dagload waarmee
- * Intervals.icu ATL berekent; empirisch gelijk aan de som van icu_training_load per dag,
- * en ook beschikbaar als activiteiten via Strava binnenkwamen (die levert /activities niet).
+ * Bron: wellness (velden ctl, atl, rampRate, atlLoad). atlLoad wordt in de API-spec niet
+ * omschreven; getest (117 dagen) is dat het gelijk is aan de som van icu_training_load per dag.
+ * Het is ook beschikbaar als activiteiten via Strava binnenkwamen (die levert /activities niet).
  */
 
 export const WELLNESS_FIELDS = ['id', 'ctl', 'atl', 'rampRate', 'atlLoad'];
