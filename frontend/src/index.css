@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-surface font-sans text-slate-200 antialiased;
+}
+
+/* Recharts: geen focus-omlijning bij klikken */
+.recharts-wrapper *:focus {
+  outline: none;
+}
