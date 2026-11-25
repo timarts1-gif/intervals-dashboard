@@ -15,7 +15,7 @@ export function Settings() {
   const { settings, update } = useSettings();
   const { athlete, allActivities, wellness, rangeStart, reload, error, loadedAt, unavailableCount } = useDashboardData();
   const [nonce, setNonce] = useState(0);
-  const health = useAsync(() => api.health(), [nonce]);
+  const health = useAsync(() => api.status(), [nonce]);
   const [busy, setBusy] = useState(false);
 
   const clearAndReload = async () => {
@@ -52,6 +52,10 @@ export function Settings() {
             </Row>
             <Row label="Intervals.icu">{health.data?.configured ? <Status ok={connected} text={connected ? 'Verbonden' : error ?? 'Fout'} /> : '–'}</Row>
             <Row label="Athlete-ID">{athlete?.id ?? health.data?.athleteId ?? '–'}</Row>
+            <Row label="Login dashboard">{health.data ? (health.data.ownerAuth ? 'Aan' : 'Uit (OWNER_AUTH=off, alleen lokaal)') : '–'}</Row>
+            <Row label="Gedeelde coachpagina">
+              {health.data ? (health.data.shareEnabled ? `Aan · /share/ · ${health.data.coachAthletes} atleet/atleten` : 'Uit (geen share-wachtwoord ingesteld, zie README)') : '–'}
+            </Row>
             <Row label="Geladen periode">
               {fmtDate(toIsoDate(rangeStart))} – vandaag
             </Row>
@@ -81,7 +85,7 @@ export function Settings() {
                 <Database size={13} /> Instellen
               </div>
               Kopieer <code className="text-slate-200">backend/.env.example</code> naar <code className="text-slate-200">backend/.env</code>, vul
-              <code className="text-slate-200"> INTERVALS_API_KEY</code> in (Intervals.icu → Settings → Developer Settings) en herstart de backend.
+              je API-key in (Intervals.icu → Settings → Developer Settings) en herstart de backend.
             </div>
           )}
         </Card>

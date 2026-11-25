@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Activity, BarChart3, Gauge, LayoutDashboard, Settings, TrendingUp, Zap, X } from 'lucide-react';
+import { Activity, BarChart3, Gauge, LayoutDashboard, Settings, TrendingUp, Users, Zap, X } from 'lucide-react';
 
 export const NAV_ITEMS = [
   { to: '/', label: 'Overview', icon: LayoutDashboard },
@@ -7,6 +7,7 @@ export const NAV_ITEMS = [
   { to: '/performance', label: 'Performance', icon: Gauge },
   { to: '/power', label: 'Power Analysis', icon: Zap },
   { to: '/development', label: 'Development', icon: TrendingUp },
+  { to: '/coach', label: 'Coach', icon: Users },
   { to: '/settings', label: 'Settings', icon: Settings },
 ] as const;
 

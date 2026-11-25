@@ -17,6 +17,7 @@ De frontend praat alleen met de eigen backend. Alleen de backend kent je API-key
 | **Performance** | Fitness (CTL), vermoeidheid (ATL), vorm (TSB), ramp rate, rusthartslag, HRV, gewicht, slaap |
 | **Power Analysis** | Vermogenscurve (log-schaal), beste prestaties (5 s – 1 u) in W, W/kg en % FTP, NP vs. IF per rit, tijd in vermogenszones |
 | **Development** | Jaar-op-jaar (YTD) vergelijking, FTP/eFTP-ontwikkeling, uren per maand per jaar, efficiency factor, aerobe decoupling, gem. NP per maand |
+| **Coach** | CTL, ATL, Form, ramp rate, load per 7 dagen (4 blokken) en verandering t.o.v. 28 dagen geleden per gecoachte atleet, met grafiek; ook te delen via `/share/` |
 | **Settings** | Verbindingsstatus, sportfilter (alleen fietsen / alle sporten), hoeveel historie, cache legen, profiel en zones uit Intervals.icu |
 
 ## Installatie
@@ -37,8 +38,9 @@ npm install
    cp backend/.env.example backend/.env
    ```
 3. Vul `INTERVALS_API_KEY` in. `INTERVALS_ATHLETE_ID` mag `0` blijven (de atleet bij de API-key) of je eigen ID zijn, bijvoorbeeld `i123456`.
+4. Stel de toegang in (zie [Toegang en wachtwoorden](#toegang-en-wachtwoorden)): minimaal `SESSION_SECRET` en `OWNER_PASSWORD_HASH`, of `OWNER_AUTH=off` voor alleen lokaal gebruik.
 
-`backend/.env` staat in `.gitignore` en komt dus niet op GitHub.
+`backend/.env` staat in `.gitignore` en komt dus niet op GitHub. Zonder geldige toegangsinstellingen start de backend niet en meldt hij wat er ontbreekt.
 
 ### Starten
 
@@ -55,51 +57,134 @@ npm run dev
 intervals-dashboard/
 ├── backend/
 │   ├── src/
+│   │   ├── auth/         # sessies, wachtwoorden (bcrypt), rate limiting, rollen
 │   │   ├── config/       # env.ts: configuratie uit .env
-│   │   ├── middleware/   # foutafhandeling, config-check
-│   │   ├── routes/       # api.ts: /api/* endpoints
-│   │   ├── services/     # intervalsClient.ts (API + cache), normalize.ts
-│   │   ├── types/        # Intervals.icu-types en API-types
-│   │   └── index.ts      # Express-server
+│   │   ├── middleware/   # foutafhandeling
+│   │   ├── routes/       # api.ts (eigenaar), auth.ts (login), share.ts (coachoverzicht)
+│   │   ├── services/     # intervalsClient.ts, coach.ts (whitelist), normalize.ts
+│   │   ├── scripts/      # hash-password, gen-secret
+│   │   ├── types/
+│   │   ├── app.ts        # Express-app (routes, afscherming, statische bestanden)
+│   │   └── index.ts      # start de server
+│   ├── test/             # beveiligingstests (vitest + supertest)
 │   └── .env.example
 ├── frontend/
 │   ├── src/
 │   │   ├── components/   # Layout, Sidebar, KPI-kaarten, grafieken, tabel
 │   │   ├── data/         # indeling van sporttypes
 │   │   ├── hooks/        # data- en instellingen-context
-│   │   ├── pages/        # de zes pagina's
-│   │   ├── services/     # api.ts: aanroepen van de backend
+│   │   ├── pages/        # de pagina's van het dashboard
+│   │   ├── share/        # aparte app voor de gedeelde coachpagina
+│   │   ├── services/     # http.ts, api.ts (dashboard), authApi.ts (login + coach)
 │   │   ├── types/
 │   │   └── utils/        # aggregaties, datums, opmaak, zones
+│   ├── share/index.html  # tweede entry: /share/
 │   └── vite.config.ts
+├── scripts/check-bundle.mjs  # controleert dat er geen geheimen in de clientbundle zitten
 └── package.json          # npm workspaces + scripts
 ```
 
 ## Backend-API
 
-| Endpoint | Intervals.icu-endpoint |
-| --- | --- |
-| `GET /api/health` | – (status, of de key is ingesteld) |
-| `GET /api/athlete` | `GET /api/v1/athlete/{id}` |
-| `GET /api/activities?oldest=YYYY-MM-DD&newest=YYYY-MM-DD` | `GET /api/v1/athlete/{id}/activities` |
-| `GET /api/wellness?oldest=…&newest=…` | `GET /api/v1/athlete/{id}/wellness` |
-| `GET /api/power-curves?type=Ride` | `GET /api/v1/athlete/{id}/power-curves` |
-| `POST /api/cache/clear` | – |
+| Endpoint | Toegang | Intervals.icu-endpoint |
+| --- | --- | --- |
+| `GET /api/health` | iedereen | – (alleen `{status:"ok"}`) |
+| `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | iedereen | – |
+| `GET /api/share/coach` | share + eigenaar | `athlete-summary.json` (alleen namen) en `wellness?fields=id,ctl,atl,rampRate,atlLoad` per atleet |
+| `GET /api/status` | eigenaar | – |
+| `GET /api/athlete` | eigenaar | `GET /api/v1/athlete/{id}` |
+| `GET /api/activities?oldest=YYYY-MM-DD&newest=YYYY-MM-DD` | eigenaar | `GET /api/v1/athlete/{id}/activities` |
+| `GET /api/wellness?oldest=…&newest=…` | eigenaar | `GET /api/v1/athlete/{id}/wellness` |
+| `GET /api/power-curves?type=Ride` | eigenaar | `GET /api/v1/athlete/{id}/power-curves` |
+| `POST /api/cache/clear` | eigenaar | – |
 
 Antwoorden van Intervals.icu worden in het geheugen gecachet (`CACHE_TTL_SECONDS`, standaard 300).
 
-## Online hosten (later)
+## Toegang en wachtwoorden
 
-De backend kan de gebouwde frontend zelf serveren, zodat er maar één Node-proces nodig is:
+Er zijn twee rollen, elk met een eigen wachtwoord:
+
+| Rol | Ziet | Wachtwoord |
+| --- | --- | --- |
+| **Eigenaar** | het hele dashboard, inclusief **Coach** | `OWNER_PASSWORD_HASH` |
+| **Share** (derden) | alleen `/share/` met het coachoverzicht | `SHARE_PASSWORD_HASH` |
+
+Wachtwoorden staan alleen als bcrypt-hash in `backend/.env`. Na het inloggen krijg je een sessiecookie (`httpOnly`, `Secure`, `SameSite=Strict`, standaard 12 uur geldig). Met een share-sessie geeft elk ander API-endpoint `403`, en elke andere pagina stuurt door naar `/share/`.
+
+### Wachtwoord instellen of wijzigen
+
+```bash
+npm run gen-secret
+```
+
+Zet de uitkomst in `backend/.env` als `SESSION_SECRET=...`. Dit hoeft maar één keer.
+
+```bash
+npm run hash-password
+```
+
+Typ het wachtwoord (minimaal 12 tekens). Zet de uitkomst, met de enkele aanhalingstekens, achter `OWNER_PASSWORD_HASH=` of `SHARE_PASSWORD_HASH=`. Herstart daarna de backend.
+
+Een wachtwoord wijzigen doe je op dezelfde manier. Alle sessies van die rol vervallen dan meteen.
+
+### Sessies intrekken
+
+| Wat | Hoe |
+| --- | --- |
+| Alle sessies (beide rollen) | Hoog `SESSION_VERSION` op (1 → 2 → …) en herstart de backend |
+| Alleen de share-sessies | Stel een nieuw share-wachtwoord in |
+| Delen helemaal uitzetten | Maak `SHARE_PASSWORD_HASH` leeg en herstart |
+
+### Welke atleten
+
+De API maakt geen onderscheid tussen atleten die je **volgt** en atleten die je **coacht**. Daarom staat de lijst expliciet in `COACH_ATHLETE_IDS` (komma-gescheiden, bijvoorbeeld `i49046`). Het athlete-ID staat in de URL van het profiel van de atleet op intervals.icu.
+
+### Wat de gedeelde pagina wel en niet bevat
+
+- **Wel** (whitelist in `backend/src/services/coach.ts`): naam, CTL, ATL, Form (CTL − ATL), ramp rate, load per 7 dagen (4 blokken), verandering t.o.v. 28 dagen geleden, laatste datadag en de dagreeks CTL/ATL/Form.
+- **Niet**: athlete-ID, e-mail, gewicht, HRV, rusthartslag, slaap, stemming/blessure, comments, activiteiten, locatie of andere profielvelden.
+- **Load:** komt uit wellness-veld `atlLoad`. Dat is de dagload waarmee Intervals.icu ATL berekent; getest is dat die gelijk is aan de som van `icu_training_load` per dag. Hij is ook beschikbaar als activiteiten via Strava binnenkwamen, en die levert `/activities` niet.
+- **Cache:** het coachoverzicht wordt 1 uur gecachet (`COACH_CACHE_TTL_SECONDS`).
+- **Niet indexeren of opslaan:** responses krijgen `X-Robots-Tag: noindex`, `/robots.txt` sluit alles uit, en de data krijgt `Cache-Control: private, no-store`.
+
+### Beveiliging controleren
+
+```bash
+npm test
+```
+
+Draait `backend/test/security.test.ts` en toont aan dat:
+
+- (a) zonder sessie geen data te verkrijgen is;
+- (b) een share-sessie geen andere route of endpoint bereikt;
+- (c) het share-endpoint exact de whitelisted velden bevat;
+- ook rate limiting, cookie-flags en het intrekken van sessies werken.
 
 ```bash
 npm run build
-STATIC_DIR=../frontend/dist npm start
 ```
 
-Zet bij je hostingpartij de omgevingsvariabelen uit `.env.example` als secrets. Wil je frontend en backend apart hosten? Bouw de frontend dan met `VITE_API_URL=https://jouw-backend.example` en zet `CORS_ORIGIN` op de URL van de frontend.
+```bash
+npm run check:bundle
+```
 
-Let op: het dashboard heeft geen login. Wie de URL kent, ziet je trainingsdata. Zet er bij online hosten dus eerst authenticatie voor.
+Dit toont (d) aan: er staat geen API-key, sessiegeheim of wachtwoordhash in `frontend/dist`. Heb je een `backend/.env`, dan zoekt de check ook naar de echte waarden daaruit.
+
+## Online hosten
+
+De backend serveert de gebouwde frontend zelf. Frontend en API staan dus op hetzelfde domein; dat is nodig voor de `SameSite=Strict`-cookie.
+
+```bash
+npm run build
+```
+
+```bash
+HOST=0.0.0.0 STATIC_DIR=../frontend/dist TRUST_PROXY=1 npm start
+```
+
+Zet bij je hostingpartij de variabelen uit `.env.example` als secrets, met `OWNER_AUTH=on`. Gebruik altijd HTTPS.
+
+**GitHub Pages is hier niet geschikt.** Pages host alleen statische bestanden en kan geen Node-backend draaien. De API-key en de wachtwoordcontrole moeten op een server staan. Een frontend op Pages met een backend ergens anders werkt ook niet: `*.github.io` is een andere site dan het domein van de backend, dus de `SameSite=Strict`-cookie wordt niet meegestuurd. Gebruik een host die een Node-proces draait.
 
 ## Definities
 

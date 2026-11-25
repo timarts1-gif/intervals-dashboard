@@ -1,32 +1,23 @@
-import express from 'express';
-import cors from 'cors';
-import fs from 'node:fs';
-import path from 'node:path';
-import { config, isConfigured } from './config/env.js';
-import { apiRouter } from './routes/api.js';
-import { errorHandler, notFound } from './middleware/errorHandler.js';
+import { authProblems, loadConfig } from './config/env.js';
+import { createIntervalsClient } from './services/intervalsClient.js';
+import { createCoachService } from './services/coach.js';
+import { createApp } from './app.js';
 
-const app = express();
-
-app.disable('x-powered-by');
-app.use(cors({ origin: config.corsOrigins }));
-app.use(express.json());
-
-app.use('/api', apiRouter);
-app.use('/api', notFound);
-
-// In productie kan de backend de gebouwde frontend serveren (één proces om te hosten).
-if (config.staticDir && fs.existsSync(config.staticDir)) {
-  const dir = path.resolve(config.staticDir);
-  app.use(express.static(dir));
-  app.get('*', (_req, res) => res.sendFile(path.join(dir, 'index.html')));
+const config = loadConfig();
+const problems = authProblems(config);
+if (problems.length) {
+  console.error('Configuratie onvolledig:\n - ' + problems.join('\n - ') + '\nZie backend/.env.example en de README.');
+  process.exit(1);
 }
 
-app.use(errorHandler);
+const intervals = createIntervalsClient(config);
+const coach = createCoachService(config, intervals);
+const app = createApp({ config, intervals, coach });
 
-app.listen(config.port, () => {
-  console.log(`Backend draait op http://localhost:${config.port}`);
-  if (!isConfigured()) {
-    console.warn('Let op: INTERVALS_API_KEY ontbreekt. Zie backend/.env.example.');
-  }
+app.listen(config.port, config.host, () => {
+  console.log(`Backend draait op http://${config.host}:${config.port}`);
+  if (!config.intervals.apiKey) console.warn('Let op: INTERVALS_API_KEY ontbreekt. Zie backend/.env.example.');
+  if (!config.auth.ownerAuth) console.warn('Let op: OWNER_AUTH=off — dashboard zonder login (alleen lokaal).');
+  if (!config.auth.sharePasswordHash) console.warn('Gedeelde coachpagina staat uit (SHARE_PASSWORD_HASH leeg).');
+  if (config.coach.athleteIds.length === 0) console.warn('COACH_ATHLETE_IDS is leeg: coachoverzicht toont geen atleten.');
 });

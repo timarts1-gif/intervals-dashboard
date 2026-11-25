@@ -111,3 +111,10 @@ export interface IntervalsPowerCurve {
 export interface IntervalsPowerCurveSet {
   list: IntervalsPowerCurve[];
 }
+
+/** Subset van SummaryWithCats (athlete-summary). Overige velden (email, weight, ...) worden genegeerd. */
+export interface IntervalsAthleteSummary {
+  athlete_id: string;
+  athlete_name?: string;
+  date?: string;
+}

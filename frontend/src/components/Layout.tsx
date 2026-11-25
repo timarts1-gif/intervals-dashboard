@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Menu, RefreshCw } from 'lucide-react';
+import { LogOut, Menu, RefreshCw } from 'lucide-react';
+import { useAuthContext } from '../hooks/AuthContext';
 import { Sidebar } from './Sidebar';
 import { useDashboardData } from '../hooks/useDashboardData';
 
 export function Layout() {
   const [open, setOpen] = useState(false);
   const { athlete, loading, reload, loadedAt } = useDashboardData();
+  const { state, logout } = useAuthContext();
+  const canLogout = state.status === 'ok' && state.me.ownerAuth;
 
   return (
     <div className="min-h-screen">
@@ -28,6 +31,11 @@ export function Layout() {
               <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
               <span className="hidden sm:inline">Vernieuwen</span>
             </button>
+            {canLogout && (
+              <button onClick={logout} className="rounded-lg border border-surface-border p-1.5 text-slate-300 hover:bg-white/5" title="Uitloggen" aria-label="Uitloggen">
+                <LogOut size={15} />
+              </button>
+            )}
             {athlete && (
               <div className="flex items-center gap-2">
                 <div className="grid h-8 w-8 place-items-center rounded-full bg-slate-700 text-xs font-semibold text-white">

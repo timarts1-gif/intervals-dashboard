@@ -6,6 +6,7 @@ import { Performance } from './pages/Performance';
 import { PowerAnalysis } from './pages/PowerAnalysis';
 import { Development } from './pages/Development';
 import { Settings } from './pages/Settings';
+import { Coach } from './pages/Coach';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="performance" element={<Performance />} />
         <Route path="power" element={<PowerAnalysis />} />
         <Route path="development" element={<Development />} />
+        <Route path="coach" element={<Coach />} />
         <Route path="settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

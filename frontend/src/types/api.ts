@@ -84,9 +84,47 @@ export interface PowerCurve {
   points: PowerCurvePoint[];
 }
 
-export interface Health {
-  status: string;
+export interface Status {
   configured: boolean;
   athleteId: string;
   cacheEntries: number;
+  coachAthletes: number;
+  shareEnabled: boolean;
+  ownerAuth: boolean;
+}
+
+export type Role = 'owner' | 'share';
+
+export interface Me {
+  role: Role;
+  ownerAuth: boolean;
+}
+
+/** Coachoverzicht: exact de velden die het share-endpoint levert. */
+export interface CoachSeriesPoint {
+  date: string;
+  ctl: number | null;
+  atl: number | null;
+  form: number | null;
+}
+
+export interface CoachAthlete {
+  name: string;
+  ctl: number | null;
+  atl: number | null;
+  form: number | null;
+  rampRate: number | null;
+  weeklyLoad: number[];
+  ctlChange28: number | null;
+  atlChange28: number | null;
+  formChange28: number | null;
+  lastDataDate: string | null;
+  series: CoachSeriesPoint[];
+}
+
+export interface CoachOverview {
+  generatedAt: string;
+  periodStart: string;
+  periodEnd: string;
+  athletes: CoachAthlete[];
 }
