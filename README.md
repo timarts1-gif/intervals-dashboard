@@ -186,6 +186,18 @@ HOST=0.0.0.0 STATIC_DIR=../frontend/dist TRUST_PROXY=1 npm start
 
 Zet bij je hostingpartij de variabelen uit `.env.example` als secrets, met `OWNER_AUTH=on`. Gebruik altijd HTTPS.
 
+### Op Render
+
+In de repo staat een blueprint ([render.yaml](render.yaml)).
+
+1. Log in op [render.com](https://render.com) met je GitHub-account.
+2. Kies **New → Blueprint** en selecteer deze repo en de branch die je wilt publiceren.
+3. Render vraagt om vijf geheimen. Neem de waarden over uit `backend/.env`, **zonder de enkele aanhalingstekens** rond de hashes:
+   `INTERVALS_API_KEY`, `INTERVALS_ATHLETE_ID`, `OWNER_PASSWORD_HASH`, `SHARE_PASSWORD_HASH`, `SESSION_SECRET`.
+4. Na de build staat de app op `https://<naam>.onrender.com`. De coachpagina is `https://<naam>.onrender.com/share/`.
+
+Elke push naar die branch zet automatisch een nieuwe versie online. Op het gratis plan valt de service na 15 minuten zonder bezoek in slaap; het eerste bezoek daarna duurt ongeveer een halve minuut.
+
 **GitHub Pages is hier niet geschikt.** Pages host alleen statische bestanden en kan geen Node-backend draaien. De API-key en de wachtwoordcontrole moeten op een server staan. Een frontend op Pages met een backend ergens anders werkt ook niet: `*.github.io` is een andere site dan het domein van de backend, dus de `SameSite=Strict`-cookie wordt niet meegestuurd. Gebruik een host die een Node-proces draait.
 
 ## Definities

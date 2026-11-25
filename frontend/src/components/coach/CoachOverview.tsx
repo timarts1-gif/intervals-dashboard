@@ -6,6 +6,7 @@ import { nl } from 'date-fns/locale';
 import type { CoachAthlete, CoachOverview as Overview } from '../../types/api';
 import { COLORS, tooltipProps } from '../chartTheme';
 import { EmptyState } from '../States';
+import { CoachSummary } from './CoachSummary';
 import { fmt1, fmtDate, fmtInt } from '../../utils/format';
 import { parseLocal } from '../../utils/dates';
 
@@ -105,6 +106,8 @@ export function CoachOverview({ data }: { data: Overview }) {
           Periode: {fmtDate(data.periodStart)} – {fmtDate(data.periodEnd)} (28 dagen)
         </span>
       </div>
+
+      <CoachSummary data={data} />
 
       {rows.length === 0 ? (
         <EmptyState label="Geen atleten gevonden met write-toegang" />

@@ -1,0 +1,37 @@
+# Render Blueprint: draait backend + gebouwde frontend als één Node-service.
+# Waarden met `sync: false` vraagt Render bij het aanmaken; ze staan nooit in deze repo.
+services:
+  - type: web
+    name: intervals-dashboard
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci --include=dev && npm run build && npm run check:bundle
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: HOST
+        value: 0.0.0.0
+      # npm start draait in backend/, dus relatief vanaf daar.
+      - key: STATIC_DIR
+        value: ../frontend/dist
+      # Render zet één proxy voor de app; nodig voor juiste IP's bij rate limiting.
+      - key: TRUST_PROXY
+        value: "1"
+      - key: OWNER_AUTH
+        value: "on"
+      - key: COACH_ATHLETE_IDS
+        value: auto
+      - key: INTERVALS_API_KEY
+        sync: false
+      - key: INTERVALS_ATHLETE_ID
+        sync: false
+      - key: OWNER_PASSWORD_HASH
+        sync: false
+      - key: SHARE_PASSWORD_HASH
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
