@@ -18,6 +18,8 @@ interface DataState {
   /** Sportinstellingen voor fietsen (FTP, zones). */
   cyclingProfile: SportProfile | null;
   rangeStart: Date;
+  /** Activiteiten die de API niet levert (via Strava geïmporteerd). */
+  unavailableCount: number;
   loadedAt: Date | null;
   reload: () => void;
 }
@@ -29,6 +31,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [athlete, setAthlete] = useState<Athlete | null>(null);
   const [allActivities, setActivities] = useState<Activity[]>([]);
   const [wellness, setWellness] = useState<WellnessDay[]>([]);
+  const [unavailableCount, setUnavailable] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadedAt, setLoadedAt] = useState<Date | null>(null);
@@ -49,7 +52,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .then(([a, acts, w]) => {
         if (cancelled) return;
         setAthlete(a);
-        setActivities(acts);
+        setActivities(acts.activities);
+        setUnavailable(acts.unavailable);
         setWellness(w);
         setLoadedAt(new Date());
       })
@@ -81,6 +85,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     wellness,
     cyclingProfile,
     rangeStart,
+    unavailableCount,
     loadedAt,
     reload,
   };

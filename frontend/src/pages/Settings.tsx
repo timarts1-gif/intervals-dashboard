@@ -13,7 +13,7 @@ import { toIsoDate } from '../utils/dates';
 
 export function Settings() {
   const { settings, update } = useSettings();
-  const { athlete, allActivities, wellness, rangeStart, reload, error, loadedAt } = useDashboardData();
+  const { athlete, allActivities, wellness, rangeStart, reload, error, loadedAt, unavailableCount } = useDashboardData();
   const [nonce, setNonce] = useState(0);
   const health = useAsync(() => api.health(), [nonce]);
   const [busy, setBusy] = useState(false);
@@ -58,6 +58,13 @@ export function Settings() {
             <Row label="Gegevens">
               {fmtInt(allActivities.length)} activiteiten · {fmtInt(wellness.length)} wellnessdagen
             </Row>
+            {unavailableCount > 0 && (
+              <Row label="Niet beschikbaar">
+                <span className="text-amber-300">
+                  {fmtInt(unavailableCount)} activiteiten via Strava geïmporteerd: die levert de Intervals.icu API niet en ze tellen niet mee
+                </span>
+              </Row>
+            )}
             <Row label="Laatst opgehaald">{loadedAt ? loadedAt.toLocaleString('nl-NL') : '–'}</Row>
           </div>
           <button

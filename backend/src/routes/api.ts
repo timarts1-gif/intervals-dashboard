@@ -45,7 +45,11 @@ apiRouter.get(
     const oldest = dateParam(req.query.oldest, 'oldest', true)!;
     const newest = dateParam(req.query.newest, 'newest', false);
     const raw = await intervals.listActivities(oldest, newest);
-    const activities = raw.map(toActivity).sort((a, b) => a.date.localeCompare(b.date));
+    // Activiteiten die via Strava binnenkwamen levert de API alleen als stub
+    // ("STRAVA activities are not available via the API"): zonder type of data.
+    const available = raw.filter((a) => typeof a.type === 'string' && a.type !== '');
+    const activities = available.map(toActivity).sort((a, b) => a.date.localeCompare(b.date));
+    res.setHeader('X-Unavailable-Activities', String(raw.length - available.length));
     res.json(activities);
   }),
 );

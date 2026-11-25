@@ -12,7 +12,7 @@ export class ApiError extends Error {
   }
 }
 
-async function get<T>(path: string, params: Record<string, string | undefined> = {}): Promise<T> {
+async function request<T>(path: string, params: Record<string, string | undefined> = {}): Promise<{ body: T; headers: Headers }> {
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v) qs.set(k, v);
   const url = `${BASE}/api${path}${qs.size ? `?${qs}` : ''}`;
@@ -24,13 +24,19 @@ async function get<T>(path: string, params: Record<string, string | undefined> =
   }
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(res.status, body.error ?? `Fout ${res.status}`);
-  return body as T;
+  return { body: body as T, headers: res.headers };
 }
+
+const get = async <T>(path: string, params: Record<string, string | undefined> = {}) => (await request<T>(path, params)).body;
 
 export const api = {
   health: () => get<Health>('/health'),
   athlete: () => get<Athlete>('/athlete'),
-  activities: (oldest: string, newest?: string) => get<Activity[]>('/activities', { oldest, newest }),
+  /** Activiteiten plus het aantal dat de API niet levert (via Strava geïmporteerd). */
+  activities: async (oldest: string, newest?: string) => {
+    const { body, headers } = await request<Activity[]>('/activities', { oldest, newest });
+    return { activities: body, unavailable: Number(headers.get('X-Unavailable-Activities') ?? 0) };
+  },
   wellness: (oldest: string, newest?: string) => get<WellnessDay[]>('/wellness', { oldest, newest }),
   powerCurves: (type = 'Ride', curves?: string) => get<PowerCurve[]>('/power-curves', { type, curves }),
   clearCache: async () => {
